@@ -174,6 +174,42 @@ func (s *PublicTxPoolAPI) Inspect() map[string]map[string]map[string]string {
 	return content
 }
 
+// Returns pending txs for specified address
+func (s *PublicTxPoolAPI) SearchAddress(ctx context.Context, inputAddress string) map[string]map[string]*RPCTransaction {
+    content := map[string]map[string]*RPCTransaction{
+        "pending": make(map[string]*RPCTransaction),
+        "queued":  make(map[string]*RPCTransaction),
+    }
+    pending, queue := s.b.TxPoolContent()
+
+    // Flatten the pending transactions
+    for account, txs := range pending {
+        if (account.Hex() == inputAddress) {
+            dump := make(map[string]*RPCTransaction)
+            for _, tx := range txs {
+                dump[fmt.Sprintf("%d", tx.Nonce())] = newRPCPendingTransaction(tx)
+            }
+            content["pending"] = dump
+
+            break
+        }
+    }
+    // Flatten the queued transactions
+    for account, txs := range queue {
+        if (account.Hex() == inputAddress) {
+            dump := make(map[string]*RPCTransaction)
+            for _, tx := range txs {
+                dump[fmt.Sprintf("%d", tx.Nonce())] = newRPCPendingTransaction(tx)
+            }
+            content["queued"] = dump
+
+            break
+        }
+    }
+
+    return content
+}
+
 // PublicAccountAPI provides an API to access accounts managed by this node.
 // It offers only methods that can retrieve accounts.
 type PublicAccountAPI struct {
